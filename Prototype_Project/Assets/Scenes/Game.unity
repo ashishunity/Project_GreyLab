@@ -3159,6 +3159,7 @@ GameObject:
   - component: {fileID: 2062221922}
   - component: {fileID: 2062221925}
   - component: {fileID: 2062221924}
+  - component: {fileID: 2062221926}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -3208,10 +3209,10 @@ MonoBehaviour:
     type: 3}
   scoreText: {fileID: 592858992}
   TurnsText: {fileID: 914207006}
+  ComboText: {fileID: 431077472}
   GameOverPanel: {fileID: 722889839}
   MenuPanel: {fileID: 474811005}
   toggleGroup: {fileID: 920322517}
-  _AudioManager: {fileID: 2062221925}
 --- !u!4 &2062221923
 Transform:
   m_ObjectHideFlags: 0
@@ -3339,6 +3340,18 @@ MonoBehaviour:
   matchSound: {fileID: 8300000, guid: 3974e2cdb22a5a54e90f69bb05eff675, type: 3}
   mismatchSound: {fileID: 8300000, guid: 9f3ef8743d099494a8b13c2decfb053e, type: 3}
   gameOverSound: {fileID: 8300000, guid: e8782b6d5a2123544ad2e2dcd5532731, type: 3}
+--- !u!114 &2062221926
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2062221921}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f615cee412e16fa468ccf083d9e66d03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &2145559572
 GameObject:
   m_ObjectHideFlags: 0
