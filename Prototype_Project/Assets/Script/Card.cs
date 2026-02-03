@@ -111,6 +111,15 @@ public class Card : MonoBehaviour
         back.SetActive(true);
 
     }
+    public void UnflipImmediate()
+    {
+        facedUp = true;
+        isFlipped = true;
+        isMatched = false; ;
+        front_CardActive(true);
+        back.SetActive(false);
+        transform.rotation = Quaternion.Euler(0f, -180f, 0f);
+    }
 
     void front_CardActive(bool Istrue)
     {

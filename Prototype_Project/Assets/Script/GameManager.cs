@@ -4,17 +4,17 @@ using System.Linq;
 using System.Xml.Linq;
 using UnityEngine;
 using UnityEngine.UI;
+using static UnityEngine.Rendering.DebugUI.Table;
 
 public class GameManager : MonoBehaviour
 {
 
     //public 
     public static GameManager Instance;
-    public List<Sprite> cardFaceSprites;
-    public Transform cardGrid;
-    public GameObject cardPrefab;
-
-
+    
+    
+   
+   
 
     [Header("UI Element")]
     public Text scoreText;
@@ -25,11 +25,20 @@ public class GameManager : MonoBehaviour
     public ToggleGroup toggleGroup;
 
 
+   
+
+    // private
+
     // rows col
     private int rows = 2;
     private int cols = 3;
 
-    // private
+    private Transform cardGrid;
+
+    // card prefab
+    private GameObject cardPrefab;
+
+    private List<Sprite> cardFaceSprites;
     private List<Card> cards = new List<Card>();
     private List<Card> flippedCards = new List<Card>();
 
@@ -50,26 +59,35 @@ public class GameManager : MonoBehaviour
     bool IsGameRunning = false;
 
     //Object referance 
-    private AudioManager _AudioManager;
+    private  AudioManager _AudioManager;
     private SaveLoadManager _SaveLoadManager;
+    private CardPoolManager _CardPoolManager;
 
-    void Awake()
+    void Awake() 
     {
         Instance = this;
-        gridLayoutGroup = cardGrid.GetComponent<GridLayoutGroup>();
+       
+        cardFaceSprites = Resources.LoadAll<Sprite>("CardSprites").ToList();
+       
 
     }
 
-    void Start()
+    void Start() 
     {
-        _SaveLoadManager = GetComponent<SaveLoadManager>();
+        Application.targetFrameRate = 60;
+        _SaveLoadManager= GetComponent<SaveLoadManager>();   
         _AudioManager = GetComponent<AudioManager>();
+        _CardPoolManager = GetComponent<CardPoolManager>();
+
+        cardGrid = _CardPoolManager.cardGrid;
+        gridLayoutGroup = cardGrid.GetComponent<GridLayoutGroup>();
+
 
     }
 
     public void ConfigureGridToFit()
     {
-
+      
         RectTransform rt = cardGrid.GetComponent<RectTransform>();
 
         float spacing = 10f; // desired spacing between cards
@@ -91,7 +109,7 @@ public class GameManager : MonoBehaviour
         gridLayoutGroup.spacing = new Vector2(spacing, spacing);
     }
 
-    public void SetupCards()
+   public void SetupCards()
     {
 
         if (toggleGroup.IsActive())
@@ -101,14 +119,14 @@ public class GameManager : MonoBehaviour
         //Set rows col according to radio button choose in menu 
         rows = selected_Level + 1;// eg. 2 *3 , 3*4, 4*5 , 5*6 
         cols = selected_Level + 2;
-        CardRevealTime = 0.5f * selected_Level; // eg. 1.5f * 1 , 1.5f * 2 
+        CardRevealTime = .5f * selected_Level; // eg. 1.5f * 1 , 1.5f * 2 
 
         MenuPanel.SetActive(false);
 
         ConfigureGridToFit();
 
-        int totalPairs = (rows * cols) / 2;
-
+        int totalPairs = (rows * cols)/2 ;
+       
 
         // Safety check: Ensure you have enough sprites to match pair
         if (cardFaceSprites.Count < totalPairs)
@@ -142,41 +160,46 @@ public class GameManager : MonoBehaviour
             idToSprite[i] = cardFaceSprites[i];
         }
 
+        _CardPoolManager.ReturnAllCards(); // Return old cards before reuse
+        cards.Clear();
         // Instantiate and assign sprite to card
         foreach (int id in cardIds)
         {
-            GameObject obj = Instantiate(cardPrefab, cardGrid);
+            GameObject obj = _CardPoolManager.GetCard();
+            obj.transform.SetParent(cardGrid, false);
+            
             Card card = obj.GetComponent<Card>();
             card.cardId = id;
+            card.UnflipImmediate();
             card.SetCardFace(idToSprite[id]);
-
             cards.Add(card);
         }
-
-
+       
 
         // To display all cards briefly at the start of each level  and have the reveal duration change based on level
-        Invoke("InnokeAfterSomeTime", CardRevealTime);
+       
+        StartCoroutine("InnokeAfterSomeTime");
     }
 
 
-
-    void InnokeAfterSomeTime()
+    
+    IEnumerator InnokeAfterSomeTime()
     {
+        yield return new WaitForSeconds(CardRevealTime);
         foreach (Card child in cards)
         {
             child.Unflip();
         }
         IsGameRunning = true;
-
+      
     }
 
     public void OnCardFlipped(Card flipped)
     {
-        if (flippedCards.Contains(flipped) || flipped.isMatched)
+        if ( flippedCards.Contains(flipped) || flipped.isMatched)
             return;
 
-
+       
         flippedCards.Add(flipped);
 
         _AudioManager.Play("flip");
@@ -190,7 +213,7 @@ public class GameManager : MonoBehaviour
 
     IEnumerator CheckMatch(Card first, Card second)
     {
-
+       
         flippedCards.Remove(first);
         flippedCards.Remove(second);
         yield return new WaitForSeconds(0.5f);
@@ -205,11 +228,11 @@ public class GameManager : MonoBehaviour
             // combo count 
             comboCount++;
 
-            score += 10 * comboMultiplier; // e.g., 1st combo = x2, 2nd = x3...
+            score +=  10 * comboMultiplier; // e.g., 1st combo = x2, 2nd = x3...
 
 
             comboMultiplier = 1 + comboCount;
-
+           
 
             first.FlipInstant();
             second.FlipInstant();
@@ -235,7 +258,7 @@ public class GameManager : MonoBehaviour
 
         TurnsText.text = "Turns\n" + Turns;
         scoreText.text = "Score\n" + score;
-
+       
 
         if (cards.All(c => c.isMatched))
         {
@@ -264,39 +287,36 @@ public class GameManager : MonoBehaviour
         ComboText.gameObject.SetActive(false);
     }
 
-    void Reset()
+     void Reset()
     {
 
 
-        // Clear existing cards from scene
-        foreach (Transform child in cardGrid)
-        {
-            Destroy(child.gameObject);
-        }
+      
 
         cards.Clear();
         flippedCards.Clear();
-
+      
 
         // Reset stats
         score = 0;
         Turns = 0;
         comboCount = 0;
         comboMultiplier = 1;
-
+      
 
         // Update UI
         TurnsText.text = "Turns\n0";
-        scoreText.text = "Score\n0";
-
+        scoreText.text = "Score\n0" ;
+        ComboText.gameObject.SetActive(false);
         // Game running reset bool 
         IsGameRunning = false;
 
         Debug.Log("Game Data Reset");
 
+        StopAllCoroutines();
+
     }
-
-
+  
     public void RestartGame()
     {
         Reset();
@@ -311,22 +331,22 @@ public class GameManager : MonoBehaviour
     public void Menu()
     {
         Reset();
-        GameOverPanel.SetActive(false);
+        GameOverPanel.SetActive(false );
         MenuPanel.SetActive(true);
 
     }
 
-
+ 
     int GetToggleLevel()
     {
-
+      
         Toggle activeToggle = toggleGroup.ActiveToggles().FirstOrDefault();
-        return int.Parse(activeToggle.name);
+        return int.Parse(activeToggle.name); 
     }
 
 
 
-    // Save and load logic 
+    //Save and load logic 
     // while game running user quit the game it's automatically save game and if user in menu aur game over state, game will not save 
 
     private void OnApplicationQuit()
@@ -335,7 +355,16 @@ public class GameManager : MonoBehaviour
             SaveData();
     }
 
-
+#if UNITY_ANDROID || UNITY_IOS
+    void OnApplicationPause(bool pause)
+    {
+        if ((Application.platform == RuntimePlatform.Android || Application.platform == RuntimePlatform.IPhonePlayer )&& IsGameRunning)
+        {
+            SaveData();
+          
+        }
+    }
+#endif
     void SaveData()
     {
         SaveData data = new SaveData();
@@ -375,11 +404,14 @@ public class GameManager : MonoBehaviour
         TurnsText.text = "Turns\n" + Turns;
         scoreText.text = "Score\n" + score;
 
-        cards.Clear(); // clear old
+       
+        _CardPoolManager.ReturnAllCards(); // Return old cards before reuse
+        cards.Clear();// clear old
         ConfigureGridToFit();
         for (int i = 0; i < data.shuffledCardIds.Count; i++)
         {
-            GameObject obj = Instantiate(cardPrefab, cardGrid);
+            
+            GameObject obj = _CardPoolManager.GetCard();
             Card card = obj.GetComponent<Card>();
             card.cardId = data.shuffledCardIds[i];
             card.SetCardFace(cardFaceSprites[card.cardId]);
@@ -399,4 +431,4 @@ public class GameManager : MonoBehaviour
         Debug.Log("Game Data Load! ");
     }
 
-}
+ }

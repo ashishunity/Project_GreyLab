@@ -1,4 +1,6 @@
-
+using System.Collections;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 public class AudioManager : MonoBehaviour
@@ -9,11 +11,11 @@ public class AudioManager : MonoBehaviour
     public AudioClip gameOverSound;
 
     private AudioSource audioSource;
-
-
+  
+  
     public void Start()
     {
-        audioSource = GetComponent<AudioSource>();
+        audioSource =GetComponent<AudioSource>();
     }
     public void Play(string type)
     {
